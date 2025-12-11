@@ -17,20 +17,17 @@ async function start() {
         auth: state
     })
 
-    // Simpan kredensial
     sock.ev.on("creds.update", saveCreds)
 
-    // === QR Handler (WAJIB AGAR QR TAMPIL) === //
+    // === QR HANDLER ===
     sock.ev.on("connection.update", (update) => {
         const { qr, connection, lastDisconnect } = update
 
-        // Tampilkan QR di terminal
         if (qr) {
             console.log("Scan QR berikut:")
             qrcode.generate(qr, { small: true })
         }
 
-        // Auto reconnect
         if (connection === "close") {
             if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
                 start()
@@ -42,7 +39,7 @@ async function start() {
         }
     })
 
-    // === HANDLE PESAN MASUK === //
+    // === HANDLE PESAN ===
     sock.ev.on("messages.upsert", async (m) => {
         const msg = m.messages[0]
         if (!msg.message) return
@@ -51,12 +48,9 @@ async function start() {
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text
         if (!text) return
 
-        // PREFIX
         const prefix = "!"
         if (!text.startsWith(prefix)) return
         const cmd = text.slice(1).trim().split(" ")[0].toLowerCase()
-
-        // === COMMANDS === //
 
         if (cmd === "ping") {
             await sock.sendMessage(from, { text: "🏓 Pong!" })
