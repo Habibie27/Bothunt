@@ -1,8 +1,8 @@
 // =============================================
 //              BOTHUNT BOT INDEX.JS
-//      Full Features: OWNER + VIP + MENU +
-//      AUTO REACT PREMIUM + 100+ EMOJI
-//         Owner: Rayyan (85659852467)
+//      FULL SYSTEM: OWNER + VIP + MENU +
+//  AUTO REACT PREMIUM + 100 EMOJI + PAIRING CODE
+//           Owner: Rayyan (85659852467)
 // =============================================
 
 const {
@@ -35,7 +35,7 @@ function isVIP(number) {
 //                     OWNER CONFIG
 // ====================================================
 
-const owners = ["85659852467"] // Owner: Rayyan
+const owners = ["85659852467"] // Owner Rayyan
 
 function isOwner(number) {
     return owners.includes(number)
@@ -67,7 +67,7 @@ async function autoReactPremium(sock, msg) {
 }
 
 // ====================================================
-//                     MENU TEXT
+//                       MENU
 // ====================================================
 const menuText = `
 🌟 *BOTHUNT MENU*
@@ -90,48 +90,66 @@ const menuText = `
 `
 
 // ====================================================
-//                       BOT START
+//                     START BOT
 // ====================================================
+
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState("./session")
-    
+
     const sock = makeWASocket({
-        printQRInTerminal: true,
-        auth: state
+        printQRInTerminal: false, // QR OFF (diganti pairing)
+        auth: state,
+        browser: ["Bothunt", "Chrome", "1.0"]
     })
+
+    // Jika blm login → Pairing Code Mode
+    if (!sock.authState.creds.registered) {
+        const rl = require("readline")
+            .createInterface({ input: process.stdin, output: process.stdout })
+
+        rl.question("Masukkan Nomor WhatsApp (contoh: 85659852467): ", async (number) => {
+            const code = await sock.requestPairingCode(number)
+            console.log(`\n🔥 Kode Pairing Kamu: ${code}\n`)
+            rl.close()
+        })
+    }
 
     sock.ev.on("creds.update", saveCreds)
 
+    // ====================================================
+    //                 MESSAGE HANDLER
+    // ====================================================
     sock.ev.on("messages.upsert", async (m) => {
         const msg = m.messages[0]
         if (!msg.message) return
 
         const from = msg.key.remoteJid
-        const text = msg.message.conversation || msg.message.extendedTextMessage?.text || ""
+        const text = msg.message.conversation || msg.message?.extendedTextMessage?.text || ""
         const sender = msg.key.participant || from
         const senderNumber = sender.split("@")[0]
 
-        // ====================================================
-        //                     AUTO REACT VIP
-        // ====================================================
+        // AUTO REACT PREMIUM (VIP ONLY)
         if (isVIP(senderNumber)) {
             await autoReactPremium(sock, msg)
         }
 
-        // ====================================================
-        //                     COMMAND MENU
-        // ====================================================
+        // =====================
+        //        COMMANDS
+        // =====================
 
+        // MENU
         if (text === ".menu") {
             return sock.sendMessage(from, { text: menuText })
         }
 
+        // OWNER INFO
         if (text === ".owner") {
             return sock.sendMessage(from, {
                 text: `👑 *OWNER BOT*\nNama: Rayyan\nNomor: wa.me/85659852467`
             })
         }
 
+        // VIP INFO
         if (text === ".vip") {
             return sock.sendMessage(from, {
                 text: `💎 *VIP BOTHUNT*  
@@ -148,10 +166,9 @@ async function startBot() {
             })
         }
 
-        // ====================================================
-        //               OWNER COMMANDS
-        // ====================================================
+        // OWNER COMMANDS =========================
 
+        // ADD VIP
         if (text.startsWith(".addvip")) {
             if (!isOwner(senderNumber))
                 return sock.sendMessage(from, { text: "❌ Kamu bukan owner!" })
@@ -163,23 +180,24 @@ async function startBot() {
             return sock.sendMessage(from, { text: `✔️ ${num} sekarang VIP.` })
         }
 
+        // LIST VIP
         if (text === ".listvip") {
             if (!isOwner(senderNumber))
-                return sock.sendMessage(from, { text: "❌ Owner Only!" })
+                return sock.sendMessage(from, { text: "❌ Khusus owner!" })
 
             let txt = "💎 *DAFTAR VIP*\n\n"
             vip.forEach((v, i) => (txt += `${i + 1}. ${v}\n`))
-
             return sock.sendMessage(from, { text: txt })
         }
 
+        // BROADCAST
         if (text.startsWith(".bc ")) {
             if (!isOwner(senderNumber))
-                return sock.sendMessage(from, { text: "❌ Owner Only!" })
+                return sock.sendMessage(from, { text: "❌ Khusus owner!" })
 
             const pesan = text.slice(4)
-            const chats = await sock.groupFetchAllParticipating()
-            const ids = Object.keys(chats)
+            const groups = await sock.groupFetchAllParticipating()
+            const ids = Object.keys(groups)
 
             for (const id of ids) {
                 await sock.sendMessage(id, { text: `📢 *Broadcast Owner:*\n${pesan}` })
@@ -187,7 +205,6 @@ async function startBot() {
 
             return sock.sendMessage(from, { text: "✔️ Broadcast sukses!" })
         }
-
     })
 
     sock.ev.on("connection.update", (update) => {
