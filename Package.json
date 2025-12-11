@@ -1,0 +1,13 @@
+{
+  "name": "bothunt",
+  "version": "1.0.0",
+  "description": "WhatsApp MD Bot",
+  "main": "index.js",
+  "author": "Habibie27",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "latest",
+    "pino": "latest",
+    "figlet": "latest"
+  }
+}
