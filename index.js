@@ -31,3 +31,34 @@ async function startBot() {
 }
 
 startBot()
+sock.ev.on("messages.upsert", async ({ messages }) => {
+    try {
+        const msg = messages[0]
+
+        // Cek apakah pesan dari Channel WA (broadcast)
+        if (msg.key.remoteJid === "status@broadcast" || msg.key.remoteJid?.includes("newsletter")) {
+            
+            // List emoji 1.000 random
+            const emojiList = [
+                "😂","🤣","😍","🔥","💀","😎","❤️","😱","🤯","👍","👎","💯","✨","🤡","🐧",
+                "😆","😇","😋","🤩","😏","🤠","😴","🥶","🤖","🙀","🐤","😻","👀","😵","🤘",
+                // kamu boleh nambahin sampai 1000 emoji
+            ]
+
+            // Ambil emoji random
+            const randomEmoji = emojiList[Math.floor(Math.random() * emojiList.length)]
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                react: {
+                    key: msg.key,
+                    text: randomEmoji
+                }
+            })
+
+            console.log("Reacted to channel message with:", randomEmoji)
+        }
+
+    } catch (e) {
+        console.log("React error:", e)
+    }
+})
